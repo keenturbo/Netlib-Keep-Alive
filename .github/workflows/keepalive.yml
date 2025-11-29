@@ -1,35 +1,43 @@
-name: Teni Saluton Viva
+name: Netlib Keep-Alive
 
 on:
   schedule:
-    - cron: "0 0 1,31 * *"  # 每月 1 号和 31 号凌晨0点
-  workflow_dispatch:       # 支持手动触发
+    - cron: "0 0 1,15 * *"  # 每月 1 号和 15 号凌晨执行
+  workflow_dispatch:  # 支持手动触发
 
 jobs:
-  run:
+  keep-alive:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 30  # 防止卡死
+    
     steps:
-      - name: Elchecki deponejon
+      - name: 检出代码
         uses: actions/checkout@v4
-
-      - name: Agordi Python
-        uses: actions/setup-python@v4
+      
+      - name: 设置 Python 环境
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
-
-      - name: Instali Playwright
+          python-version: "3.11"
+          cache: 'pip'
+      
+      - name: 安装依赖
         run: |
           python -m pip install --upgrade pip
-          python -m pip install playwright
-          python -m playwright install chromium
-          python -m pip install requests
-
-      - name: Ruli Teni-Salutan-Staton
+          pip install playwright requests
+          playwright install chromium --with-deps
+      
+      - name: 执行保活任务
         env:
-          UZANTONOMO: ${{ secrets.UZANTONOMO }}
-          PASVORTO: ${{ secrets.PASVORTO }}
-          TELEGRAM_SIGNALO: ${{ secrets.TELEGRAM_SIGNALO }}
-          TELEGRAM_BABILO_ID: ${{ secrets.TELEGRAM_BABILO_ID }}
-        run: |
-          python login.py
+          SITE_ACCOUNTS: ${{ secrets.SITE_ACCOUNTS }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python login.py
+      
+      - name: 上传日志
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: keepalive-logs
+          path: |
+            *.log
+          retention-days: 7
